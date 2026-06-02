@@ -17,7 +17,7 @@ class Chunk:
 def chunk_entry(record: Dict[str, Any]) -> List[Chunk]:
     """
     Split one corpus entry into retrieval units.
-    The chunking strategy is to split the text into chunks of 200 words with an overlap of 40 words between consecutive chunks.
+    The chunking strategy is to split the text into chunks of 200 words with an overlap of 30 words between consecutive chunks.
     """
     page_id = int(record["page_id"])
     text = entry_text(record)
