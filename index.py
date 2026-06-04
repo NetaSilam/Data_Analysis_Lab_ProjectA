@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import pickle
 from pathlib import Path
 from typing import List, Optional, Tuple
 
@@ -13,6 +14,7 @@ from utils import ARTIFACTS_DIR, ensure_artifacts_dir, iter_entries
 
 INDEX_VECTORS_NAME = "index_vectors.npy"
 INDEX_META_NAME = "index_meta.json"
+PAGE_TEXTS_NAME = "page_texts.pkl"
 
 
 def build_index(
@@ -20,13 +22,6 @@ def build_index(
     entries_dir: Optional[Path] = None,
     artifacts_dir: Optional[Path] = None,
 ) -> Tuple[np.ndarray, List[int]]:
-    """
-    Embed the full corpus and persist artifacts.
-
-    Returns (vectors, page_ids) where row i corresponds to page_ids[i].
-    For multi-chunk pipelines, store chunk metadata in index_meta.json and
-    aggregate to page_id in retrieve.py.
-    """
     out_dir = artifacts_dir or ensure_artifacts_dir()
     records = list(iter_entries(entries_dir))
     chunks: List[Chunk] = chunk_corpus(records)
@@ -34,7 +29,7 @@ def build_index(
 
     print("documents =", len(records))
     print("num chunks =", len(chunks))
-    print("avg chunks per document =", len(chunks)/len(records))
+    print("avg chunks per document =", len(chunks) / len(records))
 
     vectors = embed_texts(texts)
     page_ids = [c.page_id for c in chunks]
@@ -49,13 +44,22 @@ def build_index(
     (out_dir / INDEX_META_NAME).write_text(
         json.dumps(meta, indent=2), encoding="utf-8"
     )
+
+    # שמור טקסטים של עמודים לreranking
+    page_texts = {
+        int(r["page_id"]): r.get("title", "") + " " + r.get("content", "")
+        for r in records
+    }
+    with open(out_dir / PAGE_TEXTS_NAME, "wb") as f:
+        pickle.dump(page_texts, f)
+    print("Page texts saved.")
+
     return vectors, page_ids
 
 
 def load_index(
     artifacts_dir: Optional[Path] = None,
 ) -> Tuple[np.ndarray, List[int]]:
-    """Load precomputed vectors and page_id map from artifacts/."""
     root = artifacts_dir or ARTIFACTS_DIR
     vectors = np.load(root / INDEX_VECTORS_NAME)
     meta = json.loads((root / INDEX_META_NAME).read_text(encoding="utf-8"))
