@@ -51,7 +51,7 @@ def search_batch(
 
     scores = query_vectors @ corpus_vectors.T
 
-    candidates_k = 10  # נסי 30 אם NDCG יורד מדי
+    candidates_k = 10  
 
     ranked = []
 
@@ -70,14 +70,14 @@ def search_batch(
             for pid, chunk_scores in page_chunks_scores.items()
         }
 
-        # top candidates מה-dense retrieval
+        # top candidates from dense retrieval
         top_candidates = sorted(
             emb_page_scores.items(),
             key=lambda x: x[1],
             reverse=True
         )[:candidates_k]
 
-        # rerank עם cross encoder
+        # rerank with cross encoder
         pairs = [
             (query, page_texts[pid][:1500])
             for pid, _ in top_candidates

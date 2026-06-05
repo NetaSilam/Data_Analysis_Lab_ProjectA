@@ -45,7 +45,7 @@ def build_index(
         json.dumps(meta, indent=2), encoding="utf-8"
     )
 
-    # שמור טקסטים של עמודים לreranking
+    # Save texts of pages for reranking
     page_texts = {
         int(r["page_id"]): r.get("title", "") + " " + r.get("content", "")
         for r in records
