@@ -34,6 +34,10 @@ def get_page_texts(root: Path) -> dict:
     return _page_texts
 
 
+def expand_query(query):
+    return query + " " + query 
+
+
 def search_batch(
     queries: List[str],
     *,
@@ -42,7 +46,7 @@ def search_batch(
 ) -> List[List[int]]:
     root = artifacts_dir or ARTIFACTS_DIR
     corpus_vectors, page_ids = load_index(artifacts_dir)
-    query_vectors = embed_queries(queries)
+    query_vectors = embed_queries(([expand_query(q) for q in queries]))
     if query_vectors.size == 0:
         return [[] for _ in queries]
 
