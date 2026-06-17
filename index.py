@@ -22,6 +22,7 @@ def build_index(
     entries_dir: Optional[Path] = None,
     artifacts_dir: Optional[Path] = None,
 ) -> Tuple[np.ndarray, List[int]]:
+    """Build and persist all artifacts needed by query-time retrieval."""
     out_dir = artifacts_dir or ensure_artifacts_dir()
     records = list(iter_entries(entries_dir))
     chunks: List[Chunk] = chunk_corpus(records)
@@ -45,7 +46,7 @@ def build_index(
         json.dumps(meta, indent=2), encoding="utf-8"
     )
 
-    # Save texts of pages for reranking
+    # Query-time reranking needs the original page text, keyed by page ID.
     page_texts = {
         int(r["page_id"]): r.get("title", "") + " " + r.get("content", "")
         for r in records
@@ -60,6 +61,7 @@ def build_index(
 def load_index(
     artifacts_dir: Optional[Path] = None,
 ) -> Tuple[np.ndarray, List[int]]:
+    """Load prebuilt chunk vectors and their page IDs from artifacts/."""
     root = artifacts_dir or ARTIFACTS_DIR
     vectors = np.load(root / INDEX_VECTORS_NAME)
     meta = json.loads((root / INDEX_META_NAME).read_text(encoding="utf-8"))
