@@ -14,14 +14,13 @@ def run(queries: list[str]) -> list[list[int]]:
 - Presentation video: TODO
 - Public GitHub repository: TODO
 
-
 ## Project Structure
 
 - `main.py` - required entry point. The autograder imports and calls `run(queries)`.
 - `chunk.py` - splits each page into overlapping text chunks.
 - `embed.py` - loads `sentence-transformers/all-MiniLM-L6-v2` and creates normalized embeddings.
 - `index.py` - builds and loads the offline index artifacts.
-- `retrieve.py` - embeds queries, scores chunk vectors, aggregates by page ID, and reranks candidates.
+- `retrieve.py` - expands and embeds queries, scores chunk vectors, aggregates by page ID, and reranks candidates.
 - `utils.py` - shared paths, corpus loading, and helper functions.
 - `eval.py` - read-only NDCG@10 evaluation utilities from the course bundle.
 - `scripts/build_index.py` - read-only helper for building artifacts locally.
@@ -34,8 +33,9 @@ def run(queries: list[str]) -> list[list[int]]:
 1. **Chunking:** each entry is represented as `title + content` and split into 200-word chunks with 30-word overlap.
 2. **Embedding:** all chunks and queries are embedded with `sentence-transformers/all-MiniLM-L6-v2`; vectors are L2-normalized.
 3. **Offline index:** chunk vectors and metadata are saved under `artifacts/`.
-4. **Query-time retrieval:** each query vector is compared with all chunk vectors by dot product. Chunk scores are grouped by `page_id` and averaged to produce page-level candidates.
-5. **Reranking:** the top page candidates are reranked with `cross-encoder/ms-marco-MiniLM-L-6-v2`, using the query and the first 1500 characters of each candidate page.
+4. **Query expansion:** each query string is repeated once before embedding to amplify the query signal while keeping the same MiniLM embedding model.
+5. **Query-time retrieval:** each expanded query vector is compared with all chunk vectors by dot product. Chunk scores are grouped by `page_id` and averaged to produce page-level candidates.
+6. **Reranking:** the top page candidates are reranked with `cross-encoder/ms-marco-MiniLM-L-6-v2`, using the original query and the first 1500 characters of each candidate page.
 
 ## Setup
 
@@ -94,4 +94,6 @@ public_queries=50
 mean_ndcg@10=...
 query_phase_time=...
 ```
+
+For the GitHub rubric, this command should succeed on a fresh clone with dependencies already installed and without rebuilding the index.
 

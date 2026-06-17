@@ -12,6 +12,7 @@ _model: SentenceTransformer | None = None
 
 
 def get_model() -> SentenceTransformer:
+    """Load the MiniLM encoder lazily and reuse it across calls."""
     global _model
     if _model is None:
         _model = SentenceTransformer(EMBEDDING_MODEL_NAME)
@@ -26,7 +27,7 @@ def embed_texts(texts: Sequence[str], *, batch_size: int = 64) -> np.ndarray:
     vectors = model.encode(
         list(texts),
         batch_size=batch_size,
-        show_progress_bar=True,  
+        show_progress_bar=True,
         convert_to_numpy=True,
         normalize_embeddings=True,
     )
@@ -34,4 +35,5 @@ def embed_texts(texts: Sequence[str], *, batch_size: int = 64) -> np.ndarray:
 
 
 def embed_queries(queries: List[str], *, batch_size: int = 64) -> np.ndarray:
+    """Embed query strings with the same model and normalization as chunks."""
     return embed_texts(queries, batch_size=batch_size)

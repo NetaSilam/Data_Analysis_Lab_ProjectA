@@ -1,4 +1,4 @@
-"""Optional preprocessing and chunking."""
+"""Preprocessing and chunking for the retrieval corpus."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -16,8 +16,10 @@ class Chunk:
 
 def chunk_entry(record: Dict[str, Any]) -> List[Chunk]:
     """
-    Split one corpus entry into retrieval units.
-    The chunking strategy is to split the text into chunks of 200 words with an overlap of 30 words between consecutive chunks.
+    Split one corpus entry into 200-word chunks with 30-word overlap.
+
+    The title is included through utils.entry_text(), so each page's first chunk
+    carries both title and content signals.
     """
     page_id = int(record["page_id"])
     text = entry_text(record)
@@ -49,7 +51,9 @@ def chunk_entry(record: Dict[str, Any]) -> List[Chunk]:
 
     return chunks
 
+
 def chunk_corpus(records: List[Dict[str, Any]]) -> List[Chunk]:
+    """Chunk all corpus records into retrieval units."""
     chunks: List[Chunk] = []
     for record in records:
         chunks.extend(chunk_entry(record))
