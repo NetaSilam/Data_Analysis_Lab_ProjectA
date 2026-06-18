@@ -10,9 +10,9 @@ def run(queries: list[str]) -> list[list[int]]:
 
 ## Team and Links
 
-- Team members: TODO
-- Presentation video: TODO
-- Public GitHub repository: TODO
+- Team members: Liz Melamed, Neta Silam
+- Presentation video: https://drive.google.com/file/d/1oUaP4GDRvoUsuwS-XM7Nsx7L7Tk0N_ax/view?usp=sharing 
+- Public GitHub repository: https://github.com/NetaSilam/Data_Analysis_Lab_ProjectA.git 
 
 ## Project Structure
 
@@ -26,20 +26,19 @@ def run(queries: list[str]) -> list[list[int]]:
 - `scripts/build_index.py` - read-only helper for building artifacts locally.
 - `scripts/eval_public.py` - read-only public self-test script.
 - `requirements.txt` - allowed Python dependencies.
-- `artifacts/` - required prebuilt index files for grading.
+- `artifacts/` - prebuilt index files required at grading time.
 
 ## Retrieval Method
 
-1. **Chunking:** each entry is represented as `title + content` and split into 200-word chunks with 30-word overlap.
-2. **Embedding:** all chunks and queries are embedded with `sentence-transformers/all-MiniLM-L6-v2`; vectors are L2-normalized.
-3. **Offline index:** chunk vectors and metadata are saved under `artifacts/`.
-4. **Query expansion:** each query string is repeated once before embedding to amplify the query signal while keeping the same MiniLM embedding model.
-5. **Query-time retrieval:** each expanded query vector is compared with all chunk vectors by dot product. Chunk scores are grouped by `page_id` and averaged to produce page-level candidates.
-6. **Reranking:** the top page candidates are reranked with `cross-encoder/ms-marco-MiniLM-L-6-v2`, using the original query and the first 1500 characters of each candidate page.
+1. **Chunking:** each page (`title + content`) is split into 200-word chunks with 30-word overlap.
+2. **Embedding:** all chunks are embedded offline with `sentence-transformers/all-MiniLM-L6-v2`; vectors are L2-normalized and stored in `artifacts/`.
+3. **Query expansion:** at query time, each query string is duplicated before embedding to amplify the query signal.
+4. **Dense retrieval:** each expanded query vector is compared with all chunk vectors by dot product. Chunk scores are grouped by `page_id` and averaged (Mean aggregation) to produce page-level scores.
+5. **Reranking:** the top 10 page candidates are reranked with `cross-encoder/ms-marco-MiniLM-L-6-v2`, using the original query and the first 1500 characters of each candidate page. The cross-encoder is loaded automatically from Hugging Face Hub at query time.
 
 ## Setup
 
-Use Python 3.10+ from the repository root:
+Requires Python 3.10+. From the repository root:
 
 ```bash
 pip install -r requirements.txt
@@ -57,43 +56,36 @@ Public queries must be available at:
 data/public_queries.json
 ```
 
-## Build Artifacts Locally
+## Artifacts
 
-Build the offline index once on your own machine:
+The following prebuilt files are already included in the repository under `artifacts/`. The autograder does not rebuild them — `run()` loads them directly from disk.
+
+| Path | Format | Description |
+| --- | --- | --- |
+| `artifacts/index_vectors.npy` | NumPy `float32`, shape `(348786, 384)` | L2-normalized MiniLM embeddings for all text chunks. |
+| `artifacts/index_meta.json` | JSON | Stores `page_ids`, `chunk_ids`, embedding model name, and vector count. |
+| `artifacts/page_texts.pkl` | Python pickle | Maps each `page_id` (int) to its full page text, used for reranking. |
+
+To rebuild artifacts locally (optional):
 
 ```bash
 python scripts/build_index.py
 ```
 
-This creates the files required by `run()` inside `artifacts/`. The grader does not run this script, so these generated files must be included in the public GitHub repository.
-
-## Required Artifacts
-
-Commit the following files before submission:
-
-| Path | Format | Purpose |
-| --- | --- | --- |
-| `artifacts/index_vectors.npy` | NumPy `float32` array, shape `(num_chunks, 384)` | L2-normalized MiniLM embedding for each text chunk. |
-| `artifacts/index_meta.json` | JSON | Stores `page_ids`, `chunk_ids`, embedding model name, and vector count. |
-| `artifacts/page_texts.pkl` | Python pickle | Maps each integer `page_id` to its full page text for reranking. |
-
-If any of these files are missing or incompatible, `python scripts/eval_public.py` will fail on a fresh clone and the functional component may receive 0.
-
 ## Public Self-Test
 
-After artifacts are built, run:
+With dependencies installed and artifacts present, run:
 
 ```bash
 python scripts/eval_public.py
 ```
 
-Expected output includes:
+Expected output:
 
 ```text
-public_queries=50
+public_queries=29
 mean_ndcg@10=...
 query_phase_time=...
 ```
 
-For the GitHub rubric, this command should succeed on a fresh clone with dependencies already installed and without rebuilding the index.
-
+This command should succeed on a fresh clone without rebuilding the index.
